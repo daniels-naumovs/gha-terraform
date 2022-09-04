@@ -1,0 +1,24 @@
+jobs:
+  commitlint:
+    runs-on: ubuntu-20.04
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - uses: actions/checkout@v3
+      with:
+        path: .github/actions/commitlint
+        ref: v2.0.0
+        repository: workivate/daniels-naumovs-commitlint
+        token: ${{ secrets['GIT_TOKEN'] }}
+
+    - uses: ./.github/actions/commitlint
+      with:
+        from: ${{ github['event']['pull_request']['base']['sha'] }}
+        to: ${{ github['event']['pull_request']['head']['sha'] }}
+        token: ${{ secrets['GIT_TOKEN'] }}
+
+name: Commit Message Linter
+
+on:
+  pull_request

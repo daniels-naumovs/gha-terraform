@@ -1,0 +1,134 @@
+author: Daniels Naumovs
+
+description: Run the Terraform workflows' commands
+
+inputs:
+  import_address:
+    description: |
+      The Terraform resource address to import.
+      Used only when `step` is set to `import`
+    required: false
+  import_id:
+    description: |
+      The actual resource ID to import.
+      Used only when `step` is set to `import`
+    required: false
+  lock_id:
+    description: |
+      The state lock ID to unlock.
+      Used only when `step` is set to `force-unlock`
+    required: false
+  step:
+    description: The last step in the workflow to run
+    required: true
+  terraform_version:
+    default: "1.1.9"
+    required: false
+  TF_CLI_ARGS_apply:
+    default: "tfplan"
+    required: false
+  TF_CLI_ARGS_destroy:
+    default: "--auto-approve"
+    required: false
+  TF_CLI_ARGS_fmt:
+    default: "--check --diff"
+    required: false
+  TF_CLI_ARGS_force-unlock:
+    default: "--force"
+    required: false
+  TF_CLI_ARGS_import:
+    required: false
+  TF_CLI_ARGS_init:
+    required: false
+  TF_CLI_ARGS_plan:
+    default: "--out=tfplan"
+    required: false
+  TF_CLI_ARGS_validate:
+    required: false
+  working-directory:
+    default: "${{ github['workspace'] }}/terraform"
+    required: false
+
+name: Terraform
+
+runs:
+  steps:
+
+  - uses: hashicorp/setup-terraform@v1
+    with:
+      terraform_version: ${{ inputs['terraform_version'] }}
+
+  - run: |
+      echo "TF_IN_AUTOMATION=true" >> $GITHUB_ENV
+      echo "TF_INPUT=0" >> $GITHUB_ENV
+    shell: bash
+
+  - env:
+      TF_CLI_ARGS_fmt:  ${{ inputs['TF_CLI_ARGS_fmt'] }}
+    id: fmt
+    if: contains('fmt, validate, plan, apply, destroy, import, force-unlock', inputs['step'])
+    run: terraform fmt
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  # TODO: add provider caching
+  # https://github.com/magnetikonline/terraform-github-action-cache-example/blob/main/.github/workflows/example.yaml
+
+  - env:
+      TF_CLI_ARGS_init: ${{ inputs['TF_CLI_ARGS_init'] }}
+    id: init
+    if: contains('validate, plan, apply, destroy, import, force-unlock', inputs['step'])
+    run: terraform init
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  - env:
+      TF_CLI_ARGS_validate: ${{ inputs['TF_CLI_ARGS_validate'] }}
+    id: validate
+    if: contains('validate, plan, apply, destroy, import, force-unlock', inputs['step'])
+    run: terraform validate
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  - env:
+      TF_CLI_ARGS_plan: ${{ inputs['TF_CLI_ARGS_plan'] }}
+    id: plan
+    if: contains('plan, apply', inputs['step'])
+    run: terraform plan
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  - env:
+      TF_CLI_ARGS_apply: ${{ inputs['TF_CLI_ARGS_apply'] }}
+    id: apply
+    if: contains('apply', inputs['step'])
+    run: terraform apply
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  - env:
+      TF_CLI_ARGS_destroy: ${{ inputs['TF_CLI_ARGS_destroy'] }}
+    id: destroy
+    if: contains('destroy', inputs['step'])
+    run: terraform destroy
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  - env:
+      TF_CLI_ARGS_import: ${{ inputs['TF_CLI_ARGS_import'] }}
+    id: import
+    if: contains('import', inputs['step'])
+    run: terraform import ${{ inputs['import_address'] }} ${{ inputs['import_id'] }}
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+    # This step doesn't use TF_CLI_ARGS_force-unlock as an environment variable...
+    # because Terraform doesn't recognize that environment variable for some...
+    # reason, so its contents are manually injected into the `run` parameter instead
+  - id: force-unlock
+    if: contains('force-unlock', inputs['step'])
+    run: terraform force-unlock ${{ inputs['TF_CLI_ARGS_force-unlock'] }} ${{ inputs['lock_id'] }}
+    shell: bash
+    working-directory: ${{ inputs['working-directory'] }}
+
+  using: composite
