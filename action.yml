@@ -59,15 +59,20 @@ runs:
       terraform_version: ${{ inputs['terraform_version'] }}
 
   - run: |
+      echo "::group::Set environment variables"
       echo "TF_IN_AUTOMATION=true" >> $GITHUB_ENV
       echo "TF_INPUT=0" >> $GITHUB_ENV
+      echo "::endgroup::"
     shell: bash
 
   - env:
       TF_CLI_ARGS_fmt:  ${{ inputs['TF_CLI_ARGS_fmt'] }}
     id: fmt
     if: contains('fmt, validate, plan, apply, destroy, import, force-unlock', inputs['step'])
-    run: terraform fmt
+    run:  |
+      echo "::group::terraform fmt"
+      terraform fmt
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -78,7 +83,10 @@ runs:
       TF_CLI_ARGS_init: ${{ inputs['TF_CLI_ARGS_init'] }}
     id: init
     if: contains('validate, plan, apply, destroy, import, force-unlock', inputs['step'])
-    run: terraform init
+    run:  |
+      echo "::group::terraform init"
+      terraform init
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -86,7 +94,10 @@ runs:
       TF_CLI_ARGS_validate: ${{ inputs['TF_CLI_ARGS_validate'] }}
     id: validate
     if: contains('validate, plan, apply, destroy, import, force-unlock', inputs['step'])
-    run: terraform validate
+    run:  |
+      echo "::group::terraform validate"
+      terraform validate
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -94,7 +105,10 @@ runs:
       TF_CLI_ARGS_plan: ${{ inputs['TF_CLI_ARGS_plan'] }}
     id: plan
     if: contains('plan, apply', inputs['step'])
-    run: terraform plan
+    run:  |
+      echo "::group::terraform plan"
+      terraform plan
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -102,15 +116,24 @@ runs:
       TF_CLI_ARGS_apply: ${{ inputs['TF_CLI_ARGS_apply'] }}
     id: apply
     if: contains('apply', inputs['step'])
-    run: terraform apply
+    run:  |
+      echo "::group::terraform apply"
+      terraform apply
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
+    # In Terraform v0.15.2 and later, the command 'terraform destroy' is an alias...
+    # for the command 'terraform apply --destroy'. This Action uses the older...
+    # 'terraform destroy' for backwards compatability.
   - env:
       TF_CLI_ARGS_destroy: ${{ inputs['TF_CLI_ARGS_destroy'] }}
     id: destroy
     if: contains('destroy', inputs['step'])
-    run: terraform destroy
+    run:  |
+      echo "::group::terraform destroy"
+      terraform destroy
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -118,7 +141,10 @@ runs:
       TF_CLI_ARGS_import: ${{ inputs['TF_CLI_ARGS_import'] }}
     id: import
     if: contains('import', inputs['step'])
-    run: terraform import ${{ inputs['import_address'] }} ${{ inputs['import_id'] }}
+    run:  |
+      echo "::group::terraform import"
+      terraform import ${{ inputs['import_address'] }} ${{ inputs['import_id'] }}
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
@@ -127,7 +153,10 @@ runs:
     # reason, so its contents are manually injected into the `run` parameter instead
   - id: force-unlock
     if: contains('force-unlock', inputs['step'])
-    run: terraform force-unlock ${{ inputs['TF_CLI_ARGS_force-unlock'] }} ${{ inputs['lock_id'] }}
+    run:  |
+      echo "::group::terraform force-unlock"
+      terraform force-unlock ${{ inputs['TF_CLI_ARGS_force-unlock'] }} ${{ inputs['lock_id'] }}
+      echo "::endgroup::"
     shell: bash
     working-directory: ${{ inputs['working-directory'] }}
 
